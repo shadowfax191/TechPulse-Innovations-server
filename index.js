@@ -5,6 +5,7 @@ const cors = require('cors');
 const jwt = require('jsonwebtoken')
 const cookieParser = require('cookie-parser')
 require('dotenv').config()
+const stripe = require('stripe')(process.env.STRIPE)
 const app = express()
 const port = process.env.PORT || 5000
 
@@ -37,13 +38,26 @@ async function run() {
         const UsersCollection = client.db('employeeDB').collection('users')
         const FireCollection = client.db('employeeDB').collection('fires')
         const WorkCollection = client.db('employeeDB').collection('work')
+        const PaymentCollection = client.db('employeeDB').collection('payment')
 
 
 
-        const BookingCollection = client.db('hotel').collection('bookingData')
-        const ReviewCollection = client.db('hotel').collection('reviewData')
+       
 
+        //payment
+        app.post('/create-payment'), async (req, res) => {
+            const { price } = req.body
+            const amount = parseInt(price * 100)
+            const paymentIntent = await stripe.paymentIntents.create({
+                amount: amount,
+                currency: 'usd',
+                payment_method_types: ['card']
+            })
 
+            res.send({
+                clientSecret: paymentIntent.client_secret
+            })
+        }
 
         const verifyToken = async (req, res, next) => {
             const token = req.cookies?.token
@@ -158,20 +172,51 @@ async function run() {
             const result = await UsersCollection.find().toArray()
             res.send(result)
         })
+
+        app.post('/payment', verifyToken, verifyHr,async (req, res) => {
+            const user = req.body
+            const {email,month,year}=req.body
+
+            const existingPayment= await PaymentCollection.findOne({email,month,year})
+
+            if(existingPayment){
+                return res.er('already paid in this month')
+            }
+
+
+            const result = await PaymentCollection.insertOne(user)
+            res.send(result)
+        })
+        app.get('/payment',  verifyToken, verifyHr, async (req, res) => {
+            const result = await PaymentCollection.find().toArray()
+            res.send(result)
+        })
+
         // admin
         app.get('/allEmployee', verifyToken, verifyAdmin, async (req, res) => {
             const result = await UsersCollection.find().toArray()
             res.send(result)
         })
 
-        app.get('/employee/:id', verifyToken, verifyHr, async (req, res) => {
-            const id = req.params.id
+        app.get('/employee/:email', verifyToken, verifyHr, async (req, res) => {
+            const email = req.params.email
+       
             const filter = {
-                _id: new ObjectId(id)
+                email: email
             }
             const user = await UsersCollection.findOne(filter);
             res.send(user)
         })
+        app.get('/payment/:email', verifyToken, verifyHr, async (req, res) => {
+            const email = req.params.email
+           
+            const filter = {
+                email: email
+            }
+            const user = await PaymentCollection.find(filter).toArray()
+            res.send(user)
+        })
+
 
         // HR/
         app.put('/users/update/:id', verifyToken, verifyHr, async (req, res) => {
@@ -193,6 +238,9 @@ async function run() {
             )
             res.send(result)
         })
+
+
+
         // admin
         app.put('/makeHr/update/:id', verifyToken, verifyAdmin, async (req, res) => {
             const data = req.body
@@ -262,13 +310,7 @@ async function run() {
 
 
 
-        //Delete booking
-        app.delete('/bookingData/delete/:id', async (req, res) => {
-            const id = req.params.id
-            const query = { _id: new ObjectId(id) }
-            const result = await BookingCollection.deleteOne(query)
-            res.send(result)
-        })
+     
 
 
         await client.db("admin").command({ ping: 1 });
