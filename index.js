@@ -10,7 +10,7 @@ const app = express()
 const port = process.env.PORT || 5000
 
 app.use(cors({
-    origin: ['http://localhost:5173'],
+    origin: ['https://employee-management-f76c3.web.app','https://employee-management-f76c3.firebaseapp.com'],
     credentials: true,
 }))
 
@@ -42,7 +42,7 @@ async function run() {
 
 
 
-       
+
 
         //payment
         app.post('/create-payment'), async (req, res) => {
@@ -115,7 +115,7 @@ async function run() {
             next()
         }
 
-      
+
 
         app.post('/users', async (req, res) => {
             const user = req.body
@@ -173,13 +173,13 @@ async function run() {
             res.send(result)
         })
 
-        app.post('/payment', verifyToken, verifyHr,async (req, res) => {
+        app.post('/payment', verifyToken, verifyHr, async (req, res) => {
             const user = req.body
-            const {email,month,year}=req.body
+            const { email, month, year } = req.body
 
-            const existingPayment= await PaymentCollection.findOne({email,month,year})
+            const existingPayment = await PaymentCollection.findOne({ email, month, year })
 
-            if(existingPayment){
+            if (existingPayment) {
                 return res.er('already paid in this month')
             }
 
@@ -187,7 +187,7 @@ async function run() {
             const result = await PaymentCollection.insertOne(user)
             res.send(result)
         })
-        app.get('/payment',  verifyToken, verifyHr, async (req, res) => {
+        app.get('/payment', verifyToken, verifyHr, async (req, res) => {
             const result = await PaymentCollection.find().toArray()
             res.send(result)
         })
@@ -200,7 +200,7 @@ async function run() {
 
         app.get('/employee/:email', verifyToken, verifyHr, async (req, res) => {
             const email = req.params.email
-       
+
             const filter = {
                 email: email
             }
@@ -209,7 +209,7 @@ async function run() {
         })
         app.get('/payment/:email', verifyToken, verifyHr, async (req, res) => {
             const email = req.params.email
-           
+
             const filter = {
                 email: email
             }
@@ -218,7 +218,7 @@ async function run() {
         })
         app.get('/employeePayment/:email', verifyToken, verifyEmployee, async (req, res) => {
             const email = req.params.email
-           console.log(email);
+            
             const filter = {
                 email: email
             }
@@ -289,7 +289,7 @@ async function run() {
             const result = await WorkCollection.insertOne(data)
             res.send(result)
         })
-        app.get('/work', async (req, res) => {
+        app.get('/work', verifyToken, async (req, res) => {
 
             const result = await WorkCollection.find().toArray()
             res.send(result)
@@ -306,7 +306,8 @@ async function run() {
             res.
                 cookie('token', token, {
                     httpOnly: true,
-                    secure: false,
+                    secure: true,
+                    sameSite: 'none'
                 })
                 .send({ success: true })
 
@@ -318,11 +319,11 @@ async function run() {
 
 
 
-     
 
 
-        await client.db("admin").command({ ping: 1 });
-        console.log("Pinged your deployment. You successfully connected to MongoDB!");
+
+        // await client.db("admin").command({ ping: 1 });
+        // console.log("Pinged your deployment. You successfully connected to MongoDB!");
     } finally {
 
     }
