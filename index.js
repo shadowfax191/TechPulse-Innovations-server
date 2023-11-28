@@ -223,7 +223,7 @@ async function run() {
                 email: email
             }
             const user = await PaymentCollection.find(filter).toArray()
-            // res.send(user)
+            res.send(user)
         })
 
         // HR/
