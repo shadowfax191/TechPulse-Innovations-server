@@ -102,20 +102,20 @@ async function run() {
 
 
 
-        // const verifyEmployee = async (req, res, next) => {
-        //     const email = req.user.userInfo.email
+        const verifyEmployee = async (req, res, next) => {
+            const email = req.user.userInfo.email
 
-        //     const query = { email: email };
-        //     const user = await UsersCollection.findOne(query)
-        //     const isEmployee = user?.role == 'employee'
-        //     if (!isEmployee) {
-        //         return res.status(403).send({ message: 'not Authorized' })
-        //     }
+            const query = { email: email };
+            const user = await UsersCollection.findOne(query)
+            const isEmployee = user?.role == 'employee'
+            if (!isEmployee) {
+                return res.status(403).send({ message: 'not Authorized' })
+            }
 
-        //     next()
-        // }
+            next()
+        }
 
-        //users collection 
+      
 
         app.post('/users', async (req, res) => {
             const user = req.body
@@ -216,7 +216,15 @@ async function run() {
             const user = await PaymentCollection.find(filter).toArray()
             res.send(user)
         })
-
+        app.get('/employeePayment/:email', verifyToken, verifyEmployee, async (req, res) => {
+            const email = req.params.email
+           console.log(email);
+            const filter = {
+                email: email
+            }
+            const user = await PaymentCollection.find(filter).toArray()
+            // res.send(user)
+        })
 
         // HR/
         app.put('/users/update/:id', verifyToken, verifyHr, async (req, res) => {
